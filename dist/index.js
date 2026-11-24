@@ -45,6 +45,9 @@ const getToken = async () => {
   return value;
 };
 
+// When Releng.dev is down or failing, re-running the job is how the run recovers.
+const AGAIN = "Re-run this job once Releng.dev is back: https://releng.dev/docs#down";
+
 // Calls Releng.dev's runner API. Fails on any status not in `allow`.
 const call = async (method, path, { json, body, query, allow = [] } = {}) => {
   const base = serverUrl();
@@ -57,7 +60,7 @@ const call = async (method, path, { json, body, query, allow = [] } = {}) => {
   try {
     res = await fetch(url, { method, headers, body: json !== undefined ? JSON.stringify(json) : body });
   } catch (e) {
-    fail(`Could not reach Releng.dev at ${base}: ${e.cause?.message ?? e.message}`);
+    fail(`Could not reach Releng.dev at ${base}: ${e.cause?.message ?? e.message}. ${AGAIN}`);
   }
   if (res.ok || allow.includes(res.status)) return res;
   const text = (await res.text()).slice(0, 500);
@@ -66,7 +69,8 @@ const call = async (method, path, { json, body, query, allow = [] } = {}) => {
     const parsed = JSON.parse(text);
     message = parsed.error ?? parsed.message ?? text;
   } catch {}
-  fail(`Releng.dev answered ${res.status} on ${method} ${path}: ${message || res.statusText}`);
+  const down = res.status >= 500 ? ` ${AGAIN}` : "";
+  fail(`Releng.dev answered ${res.status} on ${method} ${path}: ${message || res.statusText}${down}`);
 };
 
 const run = (main) =>
