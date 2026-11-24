@@ -1,0 +1,52 @@
+name: Releng.dev upload
+description: >-
+  Keeps this commit's build in Releng.dev, so every stop ships the same files. Call it once per
+  platform; a matrix build calls it in each leg.
+inputs:
+  files:
+    description: The files to keep, as a path or a glob.
+    required: true
+  platform:
+    description: macOS, Windows, Linux, iOS, Android or Web. Releng.dev works it out from the files when it's left out.
+    required: false
+  keep-days:
+    description: >-
+      How many days Releng.dev keeps the build once no stop has it and no stop can go back to
+      it. A build a stop has is never deleted.
+    required: false
+    default: "90"
+  shared-with:
+    description: >-
+      Other repositories that may take this build with releng-dev/download, separated by commas.
+      Releng.dev refuses every other repository, including ones in the same organization.
+    required: false
+  role:
+    description: >-
+      sbom when these files are the build's SBOM. Releng.dev keeps it with the build for checks
+      that compare it with what's live, and never ships it.
+    required: false
+  preview:
+    description: >-
+      true for a pull request's test build. Releng.dev keeps it as test-release-<number> on its
+      own download page and never ships it to a stop.
+    required: false
+    default: "false"
+  version:
+    description: >-
+      The version these files are. Defaults to the version in package.json, else the short commit SHA.
+    required: false
+  server:
+    description: >-
+      A team's own Releng.dev server, such as https://releng.example.com. Leave it out for hosted
+      Releng.dev. The environment variable RELENG_URL wins over it.
+    required: false
+outputs:
+  version:
+    description: The version Releng.dev kept.
+  build:
+    description: The build number Releng.dev gave these files.
+  checksums:
+    description: One line per file, "sha256  name".
+runs:
+  using: node24
+  main: dist/index.js
